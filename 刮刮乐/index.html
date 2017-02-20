@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>刮刮卡抽奖</title>
+  <link rel="stylesheet" href="css/ggl.css">
+  <script src="js/jquery.min.js" charset="utf-8"></script>
+</head>
+<body>
+<img src="images/banner1.png" class="banner1">
+<div class="ggl" id="top">
+  <div class="info" id="prize">
+    <span id="prompt"></span>
+    <span class="btn" id="ok">领取奖品</span>
+    <span class="btn" id="no">再来一次</span>
+  </div>
+  <canvas id="cl" class="canvas"></canvas>
+</div>
+<div class="num">
+  您还有<span class="num1"></span>次刮卡机会
+</div>
+<img src="images/guize.png" class="guize">
+
+
+<script type="text/javascript">
+var t = 1,        //控制刮刮卡次数
+    cl,           //画笔
+    ctx,          //画布
+    ismousedown,  //用户是否按下鼠标和开始触摸
+    isOk;         //用户是否刮开一半一上
+
+//初始化
+var initialize = function(){
+  $('.num1').html(4-t); //剩余刮卡次数
+  function getRandomNum(a, b){
+    return (Math.floor(Math.random()*(b-a))+a);
+  }
+  var r = getRandomNum(1, 100);
+  var btn = document.getElementsByClassName("btn");
+  for (var i = 0; i < btn.length; i++) {
+    btn[i].style.zIndex = "1";
+  }
+  document.getElementById('no').style.display = 'none';
+  document.getElementById('ok').style.display = 'none';
+
+  //初始化涂抹面积
+  isOk = 0;
+  if (r<t*33) {
+    document.getElementById('prompt').innerHTML = "恭喜你，中奖了！";
+    var ok = document.getElementById('ok');
+    ok.style.display = 'block';
+    //点击领取奖品
+    ok.onclick = function(){
+      window.location.href = "https:cn.bing.com";
+    };
+  }else {
+    document.getElementById('prompt').innerHTML = "很遗憾，未中奖！";
+    document.getElementById('no').style.display = 'block';
+  }
+}
+
+
+
+
+//页面加载后开始初始化画布
+window.onload = function(){
+  initialize();
+  cl = document.getElementById("cl");
+  cl.width = cl.clientWidth;
+  cl.height = cl.clientHeight;
+  ctx = cl.getContext("2d");
+
+  //PC端处理
+  cl.addEventListener('mousemove', eventMove, false);
+  cl.addEventListener('mousedown', eventDown, false);
+  cl.addEventListener('mouseup', eventUp, false);
+
+  //移动端处理
+  cl.addEventListener('touchstart', eventDown, false);
+  cl.addEventListener('touchend', eventUp, false);
+  cl.addEventListener('touchmove', eventMove, false);
+
+  //初始化
+  initCanvas();
+}
+
+//初始化画布，灰色矩形铺满
+function initCanvas(){
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#aaa';
+  ctx.fillRect(0, 0, cl.clientWidth, cl.clientHeight);
+  ctx.fill();
+
+  ctx.font = 'Bold 30px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#999';
+  ctx.fillText('刮一刮', cl.width/2, 50);
+
+  //圆形橡皮擦效果
+  ctx.globalCompositeOperation = 'destination-out';
+}
+
+//鼠标按下，触摸开始
+function eventDown(e){
+  e.preventDefault();
+  ismousedown = true;
+}
+//鼠标抬起，触摸结束
+function eventUp(e){
+  e.preventDefault();
+  var a = ctx.getImageData(0, 0, cl.width, cl.height);
+  var j = 0;
+  for (var i = 3; i < a.data.length; i+=4) {
+    if (a.data[i]==0)
+      j++;
+  }
+  //刮开区域超过一半，处理结果
+  if (j>=a.data.length/8) {
+    isOk = 1;
+  }
+  ismousedown = false;
+}
+//鼠标移动，触摸移动
+function eventMove(e){
+  e.preventDefault();
+  if (ismousedown) {
+    if(e.changedTouches){
+          e=e.changedTouches[e.changedTouches.length-1];
+    }
+
+    var top = document.getElementById("top");
+
+    var oX = cl.offsetLeft + top.offsetLeft,
+        oY = cl.offsetTop + top.offsetTop;
+
+    var x = (e.clientX + document.body.scrollLeft || e.pageX) - oX || 0,
+        y = (e.clientY + document.body.scrollTop || e.pageY) - oY || 0;
+
+    //画圆
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2,true);
+
+
+    //下面3行代码是为了修复部分手机浏览器不支持destination-out
+    cl.style.display = 'none';
+    cl.offsetHeight;
+    cl.style.display = 'inherit';
+
+    ctx.fill();
+  }
+  if(isOk){
+    var btn = document.getElementsByClassName("btn");
+    for(var i=0; i<btn.length; i++){
+      btn[i].style.zIndex = '3';
+    }
+    document.getElementsByClassName("btn")[0].style.zIndex="3";
+  }
+}
+
+
+document.getElementById('no').addEventListener('click', function(){
+  if(t<=3){
+    t++;
+    //初始化按钮
+    document.getElementById("no").style.display = "none";
+    document.getElementById("ok").style.display = "none";
+    window.onload();
+    initCanvas();
+  }
+}, false);
+
+
+</script>
+</body>
+</html>
